@@ -93,7 +93,7 @@ function backupGameFile(gameinfo) {
         }
     ]).then(answers => {
         const id = shortid.generate()
-        const savePath = `${__dirname}/saves/${gameinfo.title}-${id}-${answers.saveTitle}.questsaver`;
+        const savePath = `./saves/${gameinfo.title}-${id}-${answers.saveTitle}.questsaver`;
         client.listDevices()
             .then(function (devices) {
                 return Promise.map(devices, function (device) {
