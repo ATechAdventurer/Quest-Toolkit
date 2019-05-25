@@ -67,7 +67,6 @@ function init() {
                     { name: "Backup", value: 0 },
                     { name: "Restore", value: 1 },
                     { name: "Reset", value: 2 },
-                    { name: "Backup and Reset", value: 3 },
                 ]
             }
         ]).then(answers => {
@@ -175,4 +174,7 @@ function restoreGameFile(gameinfo) {
     })
 
 }
+
+
+
 init()
