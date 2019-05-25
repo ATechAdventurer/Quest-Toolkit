@@ -47,11 +47,11 @@ function init() {
         .write()
     scanForGames().then(function (value) {
         let foundGames = value[0];
-        console.log(foundGames)
+        //console.log(foundGames)
         let gameChoices = foundGames.map(function (item) {
             return { name: item.title, value: item }
         })
-        console.log(gameChoices)
+        //console.log(gameChoices)
         inquirer.prompt([
             {
                 type: 'list',
@@ -130,7 +130,7 @@ function backupGameFile(gameinfo) {
 }
 
 function restoreGameFile(gameinfo) {
-    console.log(gameinfo) // title, path
+    //console.log(gameinfo) // title, path
     let saves = db.get('saves').value().filter(item => item.app == gameinfo.title)
     let options = saves.map(item => {
         return { name: item.name, value: item.id }
@@ -144,7 +144,7 @@ function restoreGameFile(gameinfo) {
         }
     ]).then(answers => {
         let save = db.get('saves').find({ id: answers.saveid }).value()
-        console.log(save)
+        //console.log(save)
         client.listDevices()
             .then(function (devices) {
                 return Promise.map(devices, function (device) {
@@ -175,9 +175,7 @@ function restoreGameFile(gameinfo) {
 
 }
 
-function resetSaveFile(gameinfo){
-    
-}
+function resetSaveFile(gameinfo){}
 
 
 init()
