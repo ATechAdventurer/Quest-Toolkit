@@ -26,7 +26,7 @@ function scanForGames() {
                         files.forEach(function (file) {
                             if (file.name in supportedGames) {
                                 //console.log(`Found: ${supportedGames[file.name]}`)
-                                recognizedGames.push({ title: supportedGames[file.name].title, path: `${path}${file.name}/${supportedGames[file.name].savefile}` })
+                                recognizedGames.push({ title: supportedGames[file.name].title, path: `${path}${file.name}/${supportedGames[file.name].savefile}`, appid: file.name})
                             }
                         })
                         return recognizedGames;
@@ -122,6 +122,7 @@ function backupGameFile(gameinfo) {
             .catch(function (err) {
                 console.error('Something went wrong:', err.stack)
             })
+        
         db.get('saves')
             .push({ id, name: answers.saveTitle, path: savePath, app: gameinfo.title, appid: gameinfo.appid })
             .write()
