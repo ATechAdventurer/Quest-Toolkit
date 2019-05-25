@@ -175,6 +175,9 @@ function restoreGameFile(gameinfo) {
 
 }
 
+function resetSaveFile(gameinfo){
+    
+}
 
 
 init()

@@ -1,0 +1,4 @@
+- Choose Device and verify it is an oculus device
+- Reset Save
+- Travis CI building with pkg
+- cmd script to execute cli in shell window
