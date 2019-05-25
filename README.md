@@ -1,7 +1,7 @@
 # Want to talk about this project
 
 ![Discord](https://img.shields.io/discord/581861938141855775.svg?color=green&label=Discord&logo=discord&style=plastic)
-
+[Join Discord](https://discordapp.com/invite/hgwCxtJ)
 # Quest Save Tool
 
 Quest Save tool is a command line interface for backing up and restoring save data for games on the oculus quest headset. (and eventually for the oculus go)
