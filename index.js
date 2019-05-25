@@ -13,7 +13,7 @@ let client = adb.createClient()
 const path = "/sdcard/Android/data/"
 const supportedGames = {
     "unity.SUPERHOT_Team.SUPERHOT_VR_QA": { title: "SUPERHOT", savefile: "files/VRsuper.hot", appid: "unity.SUPERHOT_Team.SUPERHOT_VR_QA" },
-    "com.beatgames.beatsaber.demo": { title: "BeatSaber Demo", savefile: "files/PlayerData.dat", appid: "com.beatgames.beatsaber.demo" }
+    //"com.beatgames.beatsaber.demo": { title: "BeatSaber Demo", savefile: "files/PlayerData.dat", appid: "com.beatgames.beatsaber.demo" }
 }
 
 function scanForGames() {
@@ -76,6 +76,9 @@ function init() {
                     break
                 case 1:
                     restoreGameFile(answers.selectedGame)
+                    break
+                case 2:
+                    resetSaveFile(answers.selectedGame)
                     break
             }
         }).catch(err => {
@@ -176,7 +179,21 @@ function restoreGameFile(gameinfo) {
 
 }
 
-function resetSaveFile(gameinfo){}
+function resetSaveFile(gameinfo){
+    client.listDevices()
+            .then(function (devices) {
+                return Promise.map(devices, function (device) {
+                    return client.clear(device.id, gameinfo.appid)
+                })
+            })
+            .then(function () {
+                console.log('Done Reseting Gamefile')
+            })
+            .catch(function (err) {
+                console.error('Something went wrong:', err.stack)
+            })
+
+}
 
 
 init()

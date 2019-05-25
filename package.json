@@ -14,5 +14,10 @@
     "inquirer": "^6.3.1",
     "lowdb": "^1.0.0",
     "shortid": "^2.2.14"
+  },
+  "pkg": {
+    "targets": [
+      "node8"
+    ]
   }
 }
