@@ -42,7 +42,7 @@ function init() {
     if (!fs.existsSync("./saves")) {
         fs.mkdirSync("./saves")
     }
-    db.defaults({ files: [], count: 0 })
+    db.defaults({ saves: [], count: 0 })
         .write()
     scanForGames().then(function (value) {
         let foundGames = value[0];
@@ -120,15 +120,15 @@ function backupGameFile(gameinfo) {
             .catch(function (err) {
                 console.error('Something went wrong:', err.stack)
             })
-        db.get('files')
-            .push({ id, name: answers.saveTitle, path: savePath })
+        db.get('saves')
+            .push({ id, name: answers.saveTitle, path: savePath, app: gameinfo.title })
             .write()
     })
 
 }
 
 function restoreGameFile(gameinfo) {
-    console.log("Not Yet implemented")
-    process.exit()
+    console.log(gameinfo) // title, path
+    
 }
 init()
