@@ -12,7 +12,8 @@ let client = adb.createClient()
 
 const path = "/sdcard/Android/data/"
 const supportedGames = {
-    "unity.SUPERHOT_Team.SUPERHOT_VR_QA": { "title": "SUPERHOT", "savefile": "files/VRsuper.hot" }
+    "unity.SUPERHOT_Team.SUPERHOT_VR_QA": { title: "SUPERHOT", savefile: "files/VRsuper.hot", appid: "unity.SUPERHOT_Team.SUPERHOT_VR_QA" },
+    "com.beatgames.beatsaber.demo": { title: "BeatSaber Demo", savefile: "files/PlayerData.dat", appid: "com.beatgames.beatsaber.demo" }
 }
 
 function scanForGames() {
@@ -73,8 +74,10 @@ function init() {
             switch (answers.action) {
                 case 0:
                     backupGameFile(answers.selectedGame)
-                case 1: 
+                    break
+                case 1:
                     restoreGameFile(answers.selectedGame)
+                    break
             }
         }).catch(err => {
             console.log(err)
@@ -121,7 +124,7 @@ function backupGameFile(gameinfo) {
                 console.error('Something went wrong:', err.stack)
             })
         db.get('saves')
-            .push({ id, name: answers.saveTitle, path: savePath, app: gameinfo.title })
+            .push({ id, name: answers.saveTitle, path: savePath, app: gameinfo.title, appid: gameinfo.appid })
             .write()
     })
 
@@ -129,6 +132,47 @@ function backupGameFile(gameinfo) {
 
 function restoreGameFile(gameinfo) {
     console.log(gameinfo) // title, path
-    
+    let saves = db.get('saves').value().filter(item => item.app == gameinfo.title)
+    let options = saves.map(item => {
+        return { name: item.name, value: item.id }
+    })
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: "saveid",
+            message: "Which Save would you like to restore?",
+            choices: options
+        }
+    ]).then(answers => {
+        let save = db.get('saves').find({ id: answers.saveid }).value()
+        console.log(save)
+        client.listDevices()
+            .then(function (devices) {
+                return Promise.map(devices, function (device) {
+                    return client.push(device.id, save.path, `${path}${save.appid}/${supportedGames[save.appid].savefile}`)
+                        .then(function (transfer) {
+                            return new Promise(function (resolve, reject) {
+                                transfer.on('progress', function (stats) {
+                                    console.log('[%s] Pushed %d bytes so far',
+                                        device.id,
+                                        stats.bytesTransferred)
+                                })
+                                transfer.on('end', function () {
+                                    console.log('[%s] Push complete', device.id)
+                                    resolve()
+                                })
+                                transfer.on('error', reject)
+                            })
+                        })
+                })
+            })
+            .then(function () {
+                console.log('Done pushing save file to all connected devices')
+            })
+            .catch(function (err) {
+                console.error('Something went wrong:', err.stack)
+            })
+    })
+
 }
 init()
