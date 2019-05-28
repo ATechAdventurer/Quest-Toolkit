@@ -205,12 +205,13 @@ function scanForGames(deviceid) {
                             appid: file.name
                         })
                     } else {
-
-                        recognizedGames.push({
+                        //Arbitrary App Save Managment coming soon
+                        
+                        /*recognizedGames.push({
                             title: file.name,
                             path: `${dataPath}${file.name}`,
                             appid: file.name
-                        })
+                        })*/
                     }
                 }
             })
