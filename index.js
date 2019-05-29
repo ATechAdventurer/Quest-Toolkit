@@ -76,7 +76,9 @@ function sideloadPrompt() {
             message: "Some apps require an OBB to install drag and drop the file here and press enter (or type its path) otherwise just press enter",
             name: "sideloadOBB"
         }
-    ]).then(answer => sideload(answer))
+    ]).then(answer => {
+        sideload(answer)
+    })
 }
 
 function devicePrompt() {
@@ -254,14 +256,17 @@ function sideload(answer) {
                                 .then(function () {
                                     obbInstallSpinner.stop()
                                     console.log("OBB successfully installed")
+                                    return 1
                                 })
                                 .catch(function () {
                                     obbInstallSpinner.stop()
                                     console.warn("An error occured while writing OBB to device")
+                                    return 0
                                 })
 
                         } else {
-                            console.warn("It seems your OBB file is not properly formated. It's name should look like this `main.1.<packageid>`")
+                            console.log("The OBB is not in the proper naming convention, This program will soon be smart enough to figure it out")
+                            
                         }
                     }
 
