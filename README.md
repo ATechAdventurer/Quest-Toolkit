@@ -1,3 +1,4 @@
+![Banner](./assets/Quest-Toolkit-Banner.png)
 # Want to talk about this project
 
 ![Discord](https://img.shields.io/discord/581861938141855775.svg?color=green&label=Discord&logo=discord&style=plastic)
