@@ -3,3 +3,10 @@ saves
 db.json
 builds
 *-properties.json
+device.json
+CustomSongFiles
+BSTools/ToConvert
+BSTools/base.apk
+BSTools/backup/*
+BSTools/apk/*
+BSTools/assets/*

@@ -1,0 +1,2 @@
+SET JARSIGNERLOC=%1\jarsigner.exe
+echo %JARSIGNERLOC%

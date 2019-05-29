@@ -6,7 +6,8 @@ const inquirer = require('inquirer')
 const low = require('lowdb')
 const shortid = require('shortid')
 const ora = require('ora')
-const fuzzy = require('fuzzy')
+const axios = require('axios')
+const { exec } = require('child_process')
 
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 const FileSync = require('lowdb/adapters/FileSync')
@@ -38,7 +39,8 @@ function actionPrompt() { //AKA Main Menu
                 { name: "Sideload App", value: 1 },
                 { name: "Device Info", value: 2 },
                 { name: "Change Device", value: 3 },
-                { name: "Quit", value: 4 }
+                { name: "Install Custom BeatSaber Songs (Alpha, Windows Only)", value: 4 },
+                { name: "Quit", value: 5 }
             ]
         }
     ]).then((actionChoiceAnswer) => {
@@ -58,6 +60,9 @@ function actionPrompt() { //AKA Main Menu
                 devicePrompt()
                 break
             case 4:
+                beatsaberMaps()
+                break
+            case 5:
                 closeApplication()
                 break
         }
@@ -187,31 +192,31 @@ function saveManagmentPrompt() {
 
 function propertiesPrompt() {
     getProperties().then(properties => {
-       inquirer.prompt([{
-           type: "list",
-           message: "What would you like to do?",
-           name: "propertiesAnswer",
-           choices: [
-               { name: "Write properties to file", value: 0 },
-               { name: "Back", value: 1 }
-           ]
-       }]).then(answer1 => {
-           switch(answer1.propertiesAnswer){
-               case 0:
-                   fs.writeFile(`${userAnswers.chosenDevice}-properties.json`, JSON.stringify(properties, null, 2), err => {
-                    if(!err){
-                        console.log(`Wrote properties to ${userAnswers.chosenDevice}-properties.json`)
-                    }else{
-                        console.warn("An error occured: ", err)
-                    }
-                    actionPrompt()
-                   })
-                   break
+        inquirer.prompt([{
+            type: "list",
+            message: "What would you like to do?",
+            name: "propertiesAnswer",
+            choices: [
+                { name: "Write properties to file", value: 0 },
+                { name: "Back", value: 1 }
+            ]
+        }]).then(answer1 => {
+            switch (answer1.propertiesAnswer) {
+                case 0:
+                    fs.writeFile(`${userAnswers.chosenDevice}-properties.json`, JSON.stringify(properties, null, 2), err => {
+                        if (!err) {
+                            console.log(`Wrote properties to ${userAnswers.chosenDevice}-properties.json`)
+                        } else {
+                            console.warn("An error occured: ", err)
+                        }
+                        actionPrompt()
+                    })
+                    break
                 case 1:
                     actionPrompt()
                     break
-           }
-       })
+            }
+        })
     })
 }
 
@@ -231,6 +236,61 @@ function closeApplication() {
 }
 
 // Functions
+
+function beatsaberMaps() {
+    console.log(`This is kinda buggy so bear with me
+    I will walk you through getting custom songs in beatsaber on quest
+    First find a song you want to add: (I recommend going to  https://bsaber.com/songs/top )
+    Find a song as a zip file extract it and drop the folder into the 'CustomSongFiles' folder`)
+    if (fs.existsSync('./BSTools')) {
+        inquirer.prompt([
+            {
+                type: "confirm",
+                name: "legalBS",
+                message: "Do you have a legal copy of BS on your Quest?"
+            },
+            {
+                type: 'confirm',
+                name: 'setJDK',
+                message: "Make sure to set your JDK path in ./BSTool/installsongs.cmd"
+            }
+        ]).then(answers => {
+            let { legalBS, } = answers
+            
+            if (legalBS) {
+                console.log("Sweet, lets get started")
+                let installingSpinner = ora('Pathching and Installing').start()
+                exec(`.\\BSTools\\installsongs.cmd`, function (err1, stdout1, stderr1){
+                    installingSpinner.stop()
+                    console.log(stdout1)
+                })
+
+                /*client.pull(userAnswers.chosenDevice, "/data/app/com.beatgames.beatsaber-1/base.apk").then(function (transfer) {
+
+                    var fn = path.join(__dirname, "\\originalAPKs\\base.apk")
+                    transfer.on('progress', function (stats) {
+                        console.log('[%s] Pulled %d bytes so far',
+                            userAnswers.chosenDevice,
+                            stats.bytesTransferred)
+                    })
+                    transfer.on('end', function () {
+                        console.log('[%s] Pull complete', device.id)
+                        resolve(device.id)
+                    })
+                    transfer.on('error', reject)
+                    transfer.pipe(fs.createWriteStream(fn))
+
+                })
+                */
+            } else {
+                console.log("It will probably not work and may damage your system, Aborting")
+                actionPrompt()
+            }
+        })
+    } else {
+        console.log("It looks like some tools are missing, try downloading the program again")
+    }
+}
 
 function sideload(answer) {
     let { sideloadAPK, sideloadOBB } = answer
@@ -266,7 +326,7 @@ function sideload(answer) {
 
                         } else {
                             console.log("The OBB is not in the proper naming convention, This program will soon be smart enough to figure it out")
-                            
+
                         }
                     }
 
@@ -436,6 +496,9 @@ function init() {
     console.log("Welcome to the Oculus Quest Toolkit")
     if (!fs.existsSync("./saves")) {
         fs.mkdirSync("./saves")
+    }
+    if (!fs.existsSync("./CustomSongFiles")) {
+        fs.mkdirSync("./CustomSongFiles")
     }
     db.defaults({
         saves: [],
