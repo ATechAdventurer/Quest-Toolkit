@@ -2,3 +2,4 @@ node_modules
 saves
 db.json
 builds
+*-properties.json

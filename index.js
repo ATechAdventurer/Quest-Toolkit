@@ -6,7 +6,9 @@ const inquirer = require('inquirer')
 const low = require('lowdb')
 const shortid = require('shortid')
 const ora = require('ora')
+const fuzzy = require('fuzzy')
 
+inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 const FileSync = require('lowdb/adapters/FileSync')
 const adapter = new FileSync('db.json')
 const db = low(adapter)
@@ -23,16 +25,46 @@ const supportedGames = {
 
 let userAnswers = {}
 
-function beforeClose(){
-    console.log("Have a nice day")
-    process.exit()
+// Menus
+
+function actionPrompt() { //AKA Main Menu
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "action1Choice",
+            message: "What would you like to do?",
+            choices: [
+                { name: "Save Managment", value: 0 },
+                { name: "Sideload App", value: 1 },
+                { name: "Device Info", value: 2 },
+                { name: "Change Device", value: 3 },
+                { name: "Quit", value: 4 }
+            ]
+        }
+    ]).then((actionChoiceAnswer) => {
+        userAnswerHelper(actionChoiceAnswer)
+        //console.debug(userAnswers)
+        switch (userAnswers.action1Choice) {
+            case 0:
+                saveManagmentPrompt()
+                break
+            case 1:
+                sideloadPrompt()
+                break
+            case 2:
+                propertiesPrompt()
+                break
+            case 3:
+                devicePrompt()
+                break
+            case 4:
+                closeApplication()
+                break
+        }
+    })
 }
 
-function userAnswerHelper(answer){
-    Object.assign(userAnswers, answer)
-}
-
-function sideload(){
+function sideloadPrompt() {
     inquirer.prompt([
         {
             type: "input",
@@ -44,109 +76,10 @@ function sideload(){
             message: "Some apps require an OBB to install drag and drop the file here and press enter (or type its path) otherwise just press enter",
             name: "sideloadOBB"
         }
-    ]).then( answer => {
-        let {sideloadAPK, sideloadOBB} = answer
-        fs.readFile(sideloadAPK, (err1, result1) => {
-            fs.readFile(sideloadOBB, (err2, result2) => {
-                if(err2){
-                    sideloadOBB = null
-                }
-                if(err1){
-                    console.log("I can't seem to find that apk, try again?")
-                }else{
-                    let apkInstallSpinner = ora("Installing Apk").start()
-                    client.install(userAnswers.chosenDevice, sideloadAPK).then(function(){
-                        apkInstallSpinner.stop()
-                        console.log("APK installed")
-                        if(sideloadOBB !== null || sideloadOBB !== ""){
-                            console.log("Preparing to load OBB")
-                            //const filenameOBB = path.basename(sideloadOBB)
-                            if(filenameOBB.startsWith("main.1")){
-                                let packageid = filenameOBB.substr("main.1".length + 1)
-                                let obbInstallSpinner = ora("Installing OBB").start()
-                                client.push(userAnswers.chosenDevice, sideloadOBB, `${obbStorepath}${packageid}/${filenameOBB}`)
-                                .then(function(){
-                                    obbInstallSpinner.stop()
-                                    console.log("OBB successfully installed")
-                                })
-                                .catch(function(){
-                                    obbInstallSpinner.stop()
-                                    console.warn("An error occured while writing OBB to device")
-                                })
-                        
-                            }else{
-                                console.warn("It seems your OBB file is not properly formated. It's name should look like this `main.1.<packageid>`")
-                            }
-                        }
-
-                    }).catch(err => {
-                        apkInstallSpinner.stop()
-                        console.log("There was an error installing the APK, it may already be installed or the file was invalid")
-                    })
-                }
-            }) 
-            
-        })
-    })
+    ]).then(answer => sideload(answer))
 }
 
-function scanForDevices() {
-    return client.listDevices().then(devices => {
-        //console.debug(devices)
-        return Promise.map(devices, device => {
-            return client.getProperties(device.id).then(props => {
-                return {
-                    id: device.id,
-                    brand: props['ro.product.manufacturer'],
-                    model: props['ro.product.model']
-                };
-            })
-        })
-    }).catch(err => {
-        console.log("Error searching for Devices: ")
-    })
-}
-
-function actionChooser(){
-    inquirer.prompt([
-        {
-            type: "list",
-            name: "action1Choice",
-            message: "What would you like to do?",
-            choices: [
-                { name: "Save Managment", value: 0 },
-                { name: "Sideload App", value: 1 },
-                { name: "Device Info", value: 2 },
-                { name: "Change Device", value: 3},
-                { name: "Quit", value: 4}
-            ]
-        }
-    ]).then((actionChoiceAnswer) => {
-        userAnswerHelper(actionChoiceAnswer)
-        //console.debug(userAnswers)
-        switch(userAnswers.action1Choice){
-            case 0: 
-                saveManagment()
-                break
-            case 1: 
-                sideload()
-                break
-            case 2:
-                console.log("This feature is not yet implemented")
-                actionChooser()
-                break
-            case 3: 
-                promptForDevice()
-                break
-            case 4:
-                beforeClose()
-                break
-
-        }
-    })
-}
-
-function promptForDevice() {
+function devicePrompt() {
     return scanForDevices().then(function (devices) {
         let deviceOptions = devices.filter(device => {
             return device.brand !== "oculus"
@@ -173,54 +106,23 @@ function promptForDevice() {
             userAnswerHelper(answer1)
             switch (userAnswers.chosenDevice) {
                 case "searchAgain":
-                    promptForDevice()
+                    devicePrompt()
                     break
                 case "quit":
-                    beforeClose()
+                    closeApplication()
                     break
                 default:
                     return userAnswers.chosenDevice
             }
-        }).then(function(){
-            actionChooser()
+        }).then(function () {
+            actionPrompt()
         }).catch(err => {
             console.log("An Error has Occured")
         })
     })
 }
 
-function scanForGames(deviceid) {
-    if (deviceid === undefined) {
-        return
-    }
-    return client.readdir(deviceid, dataPath)
-        .then(function (files) {
-            var recognizedGames = [];
-            files.forEach(function (file) {
-                if (!file.isFile()) {
-                    if (file.name in supportedGames) {
-                        recognizedGames.push({
-                            title: supportedGames[file.name].title,
-                            path: `${dataPath}${file.name}/${supportedGames[file.name].savefile}`,
-                            appid: file.name
-                        })
-                    } else {
-                        //Arbitrary App Save Managment coming soon
-                        
-                        /*recognizedGames.push({
-                            title: file.name,
-                            path: `${dataPath}${file.name}`,
-                            appid: file.name
-                        })*/
-                    }
-                }
-            })
-            return recognizedGames;
-        }).catch()
-
-}
-
-function saveManagment(){
+function saveManagmentPrompt() {
     scanForGames(userAnswers.chosenDevice).then(gamesList => {
         let foundGames = gamesList;
         let gameChoices = foundGames.map(function (item) {
@@ -231,33 +133,33 @@ function saveManagment(){
         })
 
         inquirer.prompt([{
-                type: 'list',
-                name: "selectedGame",
-                message: "Which game would you like to work on?",
-                choices: gameChoices
+            type: 'list',
+            name: "selectedGame",
+            message: "Which game would you like to work on?",
+            choices: gameChoices
+        },
+        {
+            type: 'list',
+            name: "action",
+            message: "What would you like to do?",
+            choices: [{
+                name: "Backup",
+                value: 0
             },
             {
-                type: 'list',
-                name: "action",
-                message: "What would you like to do?",
-                choices: [{
-                        name: "Backup",
-                        value: 0
-                    },
-                    {
-                        name: "Restore",
-                        value: 1
-                    },
-                    {
-                        name: "Reset",
-                        value: 2
-                    },
-                    {
-                        name: "Go Back",
-                        value: 3
-                    }
-                ]
+                name: "Restore",
+                value: 1
+            },
+            {
+                name: "Reset",
+                value: 2
+            },
+            {
+                name: "Go Back",
+                value: 3
             }
+            ]
+        }
         ]).then(answer2 => {
             userAnswerHelper(answer2)
             console.log(userAnswers)
@@ -272,7 +174,7 @@ function saveManagment(){
                     resetSaveFile(userAnswers.chosenDevice, userAnswers.selectedGame)
                     break
                 case 3:
-                    actionChooser()
+                    actionPrompt()
                     break
             }
         }).catch(err => {
@@ -281,21 +183,156 @@ function saveManagment(){
     })
 }
 
-function init() {
-    console.log("Welcome to the Oculus Quest Toolkit")
-    if (!fs.existsSync("./saves")) {
-        fs.mkdirSync("./saves")
-    }
-    db.defaults({
-            saves: [],
-            count: 0
+function propertiesPrompt() {
+    getProperties().then(properties => {
+       inquirer.prompt([{
+           type: "list",
+           message: "What would you like to do?",
+           name: "propertiesAnswer",
+           choices: [
+               { name: "Write properties to file", value: 0 },
+               { name: "Back", value: 1 }
+           ]
+       }]).then(answer1 => {
+           switch(answer1.propertiesAnswer){
+               case 0:
+                   fs.writeFile(`${userAnswers.chosenDevice}-properties.json`, JSON.stringify(properties, null, 2), err => {
+                    if(!err){
+                        console.log(`Wrote properties to ${userAnswers.chosenDevice}-properties.json`)
+                    }else{
+                        console.warn("An error occured: ", err)
+                    }
+                    actionPrompt()
+                   })
+                   break
+                case 1:
+                    actionPrompt()
+                    break
+           }
+       })
+    })
+}
+
+
+
+// Helpers
+
+function userAnswerHelper(answer) {
+    Object.assign(userAnswers, answer)
+}
+
+// Routes
+
+function closeApplication() {
+    console.log("Have a nice day")
+    process.exit()
+}
+
+// Functions
+
+function sideload(answer) {
+    let { sideloadAPK, sideloadOBB } = answer
+    fs.readFile(sideloadAPK, (err1, result1) => {
+        fs.readFile(sideloadOBB, (err2, result2) => {
+            if (err2) {
+                sideloadOBB = null
+            }
+            if (err1) {
+                console.log("I can't seem to find that apk, try again?")
+            } else {
+                let apkInstallSpinner = ora("Installing Apk").start()
+                client.install(userAnswers.chosenDevice, sideloadAPK).then(function () {
+                    apkInstallSpinner.stop()
+                    console.log("APK installed")
+                    if (sideloadOBB !== null || sideloadOBB !== "") {
+                        console.log("Preparing to load OBB")
+                        const filenameOBB = path.basename(sideloadOBB)
+                        if (filenameOBB.startsWith("main.1")) {
+                            let packageid = filenameOBB.substr("main.1".length + 1)
+                            let obbInstallSpinner = ora("Installing OBB").start()
+                            client.push(userAnswers.chosenDevice, sideloadOBB, `${obbStorepath}${packageid}/${filenameOBB}`)
+                                .then(function () {
+                                    obbInstallSpinner.stop()
+                                    console.log("OBB successfully installed")
+                                })
+                                .catch(function () {
+                                    obbInstallSpinner.stop()
+                                    console.warn("An error occured while writing OBB to device")
+                                })
+
+                        } else {
+                            console.warn("It seems your OBB file is not properly formated. It's name should look like this `main.1.<packageid>`")
+                        }
+                    }
+
+                }).catch(err => {
+                    apkInstallSpinner.stop()
+                    console.log("There was an error installing the APK, it may already be installed or the file was invalid")
+                })
+            }
         })
-        .write()
-    promptForDevice()
+
+    })
+}
+
+
+function getProperties(deviceid = userAnswers.chosenDevice) {
+    return client.getProperties(userAnswers.chosenDevice).then((properties) => {
+        return properties;
+    }).catch(err => {
+        console.log("An error occured", err)
+    })
+}
+
+
+function scanForDevices(deviceid = userAnswers.chosenDevice) {
+    return client.listDevices().then(devices => {
+        //console.debug(devices)
+        return Promise.map(devices, device => {
+            return client.getProperties(device.id).then(props => {
+                return {
+                    id: device.id,
+                    brand: props['ro.product.manufacturer'],
+                    model: props['ro.product.model']
+                };
+            })
+        })
+    }).catch(err => {
+        console.log("Error searching for Devices: ")
+    })
+}
+
+
+function scanForGames(deviceid = userAnswers.chosenDevice) {
+    return client.readdir(deviceid, dataPath)
+        .then(function (files) {
+            var recognizedGames = [];
+            files.forEach(function (file) {
+                if (!file.isFile()) {
+                    if (file.name in supportedGames) {
+                        recognizedGames.push({
+                            title: supportedGames[file.name].title,
+                            path: `${dataPath}${file.name}/${supportedGames[file.name].savefile}`,
+                            appid: file.name
+                        })
+                    } else {
+                        //Arbitrary App Save Managment coming soon
+
+                        /*recognizedGames.push({
+                            title: file.name,
+                            path: `${dataPath}${file.name}`,
+                            appid: file.name
+                        })*/
+                    }
+                }
+            })
+            return recognizedGames;
+        }).catch()
 
 }
 
-function backupGameFile(deviceid, gameinfo) {
+
+function backupGameFile(gameinfo, deviceid = userAnswers.chosenDevice) {
     inquirer.prompt([{
         type: "input",
         name: "saveTitle",
@@ -338,7 +375,7 @@ function backupGameFile(deviceid, gameinfo) {
 
 }
 
-function restoreGameFile(deviceid, gameinfo) {
+function restoreGameFile(gameinfo, deviceid = userAnswers.chosenDevice) {
     //console.log(gameinfo) // title, path
     let saves = db.get('saves').value().filter(item => item.app == gameinfo.title)
     let options = saves.map(item => {
@@ -378,7 +415,7 @@ function restoreGameFile(deviceid, gameinfo) {
 
 }
 
-function resetSaveFile(deviceid, gameinfo) {
+function resetSaveFile(gameinfo, deviceid = userAnswers.chosenDevice) {
 
     return client.clear(deviceid, gameinfo.appid)
         .then(function () {
@@ -390,6 +427,19 @@ function resetSaveFile(deviceid, gameinfo) {
 
 }
 
+function init() {
+    console.log("Welcome to the Oculus Quest Toolkit")
+    if (!fs.existsSync("./saves")) {
+        fs.mkdirSync("./saves")
+    }
+    db.defaults({
+        saves: [],
+        count: 0
+    })
+        .write()
+    devicePrompt()
+
+}
 
 init()
 
@@ -398,5 +448,5 @@ module.exports = {
     resetSaveFile,
     restoreGameFile,
     backupGameFile,
-    promptForDevice
+    promptForDevice: devicePrompt
 }
