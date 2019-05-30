@@ -6,7 +6,6 @@ const inquirer = require('inquirer')
 const low = require('lowdb')
 const shortid = require('shortid')
 const ora = require('ora')
-const axios = require('axios')
 const { exec } = require('child_process')
 
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));

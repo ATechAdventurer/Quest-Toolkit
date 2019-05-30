@@ -1,5 +1,4 @@
 SET JARSIGNERLOC="c:\Program Files\Android\Android Studio\jre\bin\jarsigner.exe"
-cd BSTools
 erase /s /Q .\apk\base
 .\tools\adb.exe pull /data/app/com.beatgames.beatsaber-1/base.apk
 echo n | copy /-y base.apk .\backup\

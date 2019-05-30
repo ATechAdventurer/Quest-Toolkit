@@ -4,7 +4,7 @@ db.json
 builds
 *-properties.json
 device.json
-CustomSongFiles
+CustomSongFiles/*
 BSTools/ToConvert
 BSTools/base.apk
 BSTools/backup/*
