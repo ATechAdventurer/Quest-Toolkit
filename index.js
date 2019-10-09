@@ -20,7 +20,16 @@ const supportedGames = {
         title: "SUPERHOT",
         savefile: "files/VRsuper.hot",
         appid: "unity.SUPERHOT_Team.SUPERHOT_VR_QA"
-    }
+    },
+    "com.coatsink.nexus": { 
+        title: "Shadow Point",
+        savefile: "files/Save Data/Slot1", appid:
+        "com.coatsink.nexus"
+    },
+    "com.ILMxLAB.VaderImmortal.ep1": {
+        title: "Vader Immortal: Episode I",
+        savefile: "files/SaveGames/VaderImmortal.sav",
+        appid: "com.ILMxLAB.VaderImmortal.ep1"}
 }
 
 let userAnswers = {}
