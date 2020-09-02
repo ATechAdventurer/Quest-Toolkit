@@ -22,7 +22,7 @@
     ]
   },
   "devDependencies": {
-    "bestzip": "^2.1.4",
+    "bestzip": "^2.1.7",
     "pkg": "^4.4.0"
   }
 }
